@@ -1,0 +1,390 @@
+/* =================================================================
+   DRUIDS Design System — Colors & Typography
+   Datadog's core design tokens as CSS custom properties.
+   Source: @druids/ui tokens (packages/druids/ui/tokens/)
+   ================================================================= */
+
+/* -----------------------------------------------------------------
+   Google Fonts: Noto Sans + Roboto Mono
+   ----------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=Roboto+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
+
+/* =================================================================
+   BASE COLOR PALETTE (underlying primitives)
+   ================================================================= */
+:root {
+  /* Neutral */
+  --dd-neutral-light: #ffffff;
+  --dd-neutral-dark: #1a1b22;
+
+  /* Gray scale — light */
+  --dd-gray-25: #f9fafb;
+  --dd-gray-50: #eff1f5;
+  --dd-gray-75: #e2e5ed;
+  --dd-gray-100: #d1d6e6;
+  --dd-gray-125: #c2c8dd;
+  --dd-gray-150: #b4bcd4;
+  --dd-gray-175: #a9b1c7;
+  --dd-gray-200: #9da4b9;
+  --dd-gray-300: #828ba4;
+  --dd-gray-400: #6a7287;
+  --dd-gray-500: #585f70;
+  --dd-gray-600: #464b59;
+  --dd-gray-700: #373b46;
+  --dd-gray-800: #242931;
+
+  /* Gray scale — dark (cool-adjusted: hue 232 to match light grays) */
+  --dd-gray-25-dark: #1f2029;
+  --dd-gray-50-dark: #232429;
+  --dd-gray-75-dark: #28292f;
+  --dd-gray-100-dark: #353641;
+  --dd-gray-125-dark: #3b3d4a;
+  --dd-gray-150-dark: #424452;
+  --dd-gray-175-dark: #4d5060;
+  --dd-gray-200-dark: #5b5e71;
+  --dd-gray-300-dark: #66697f;
+  --dd-gray-400-dark: #7a7d90;
+  --dd-gray-500-dark: #989aa9;
+  --dd-gray-600-dark: #b5b7c4;
+  --dd-gray-700-dark: #ced0d9;
+  --dd-gray-800-dark: #e2e3e9;
+
+  /* Blue */
+  --dd-blue-100: #f3f9fc;
+  --dd-blue-200: #eaf6fc;
+  --dd-blue-300: #71b8e7;
+  --dd-blue-400: #4e91d1;
+  --dd-blue-500: #006bc2;
+  --dd-blue-600: #0953bf;
+  --dd-blue-700: #0b0f8b;
+
+  /* Red */
+  --dd-red-100: #fdebed;
+  --dd-red-200: #fbd6db;
+  --dd-red-300: #fc9da8;
+  --dd-red-400: #f66f78;
+  --dd-red-500: #eb364b;
+  --dd-red-600: #bc2b3c;
+  --dd-red-700: #922c35;
+
+  /* Amber */
+  --dd-amber-100: #fff6e3;
+  --dd-amber-200: #ffe6a2;
+  --dd-amber-300: #fecf60;
+  --dd-amber-400: #fcc028;
+  --dd-amber-500: #f99d02;
+  --dd-amber-600: #f27c00;
+  --dd-amber-700: #de5f0c;
+
+  /* Yellow */
+  --dd-yellow-100: #fffbe5;
+  --dd-yellow-200: #fff8d0;
+  --dd-yellow-300: #fff5ba;
+  --dd-yellow-400: #ffec8a;
+  --dd-yellow-500: #ffdf52;
+  --dd-yellow-600: #facc00;
+  --dd-yellow-700: #cc9419;
+
+  /* Green */
+  --dd-green-100: #ecf9ef;
+  --dd-green-200: #d9f3e0;
+  --dd-green-300: #96dda2;
+  --dd-green-400: #70d182;
+  --dd-green-500: #41c464;
+  --dd-green-600: #39b15d;
+  --dd-green-700: #2a7e41;
+
+  /* Purple (brand family) */
+  --dd-purple-100: #f2ecfc;
+  --dd-purple-200: #e6d6f9;
+  --dd-purple-300: #cbb1ed;
+  --dd-purple-400: #b48fe1;
+  --dd-purple-500: #9364cd;
+  --dd-purple-600: #632ca6;
+  --dd-purple-700: #451481;
+
+  /* Pink */
+  --dd-pink-100: #fff7fc;
+  --dd-pink-200: #fff2fa;
+  --dd-pink-300: #ffe6f5;
+  --dd-pink-400: #ffb3e0;
+  --dd-pink-500: #ff0099;
+  --dd-pink-600: #af0069;
+  --dd-pink-700: #660036;
+
+  /* Indigo */
+  --dd-indigo-100: #f0f2ff;
+  --dd-indigo-200: #d9deff;
+  --dd-indigo-300: #b0b7eb;
+  --dd-indigo-400: #8792e0;
+  --dd-indigo-500: #5e6dd6;
+  --dd-indigo-600: #3f4ca5;
+  --dd-indigo-700: #2e3566;
+}
+
+/* =================================================================
+   SEMANTIC COLORS — Light Theme (default)
+   ================================================================= */
+:root,
+[data-theme="light"] {
+  /* Scaffolding */
+  --ui-background: #ffffff;
+  --ui-background-secondary: #f9fafb;
+  --ui-background-tertiary: #e2e5ed;
+  --ui-background-elevated: var(--ui-background);
+  --ui-background-shade: #464b59;
+  --ui-border: #e2e5ed;
+  --ui-border-elevated: transparent;
+  --ui-placeholder: rgba(226, 229, 237, 0.5);
+
+  /* Text */
+  --ui-text: rgba(28, 43, 52, 0.98);
+  --ui-text-secondary: rgba(28, 43, 52, 0.68);
+  --ui-text-tertiary: rgba(28, 43, 52, 0.5);
+  --ui-text-disabled: rgba(28, 43, 52, 0.35);
+  --ui-text-knockout: #ffffff;
+
+  /* Icons */
+  --ui-icon: rgba(28, 43, 52, 0.66);
+  --ui-icon-secondary: rgba(28, 43, 52, 0.46);
+
+  /* Interaction */
+  --ui-interaction-primary: #006bc2;
+  --ui-interaction-primary-contrast: #0953bf;
+  --ui-interaction-secondary: #eaf6fc;
+  --ui-interaction-secondary-contrast: #d4ecf9;
+  --ui-interaction-callout: #ff0099;
+
+  /* Status */
+  --ui-status-danger: #eb364b;
+  --ui-status-danger-contrast: #bc2b3c;
+  --ui-status-danger-soft: #fdebed;
+  --ui-status-warning: #f99d02;
+  --ui-status-warning-contrast: #c15800;
+  --ui-status-warning-soft: #fff6e3;
+  --ui-status-success: #41c464;
+  --ui-status-success-contrast: #2a7e41;
+  --ui-status-success-soft: #ecf9ef;
+  --ui-status-other: #828ba4;
+  --ui-status-other-contrast: #585f70;
+  --ui-status-other-soft: #eff1f5;
+  --ui-status-in-progress: #9364cd;
+  --ui-status-in-progress-contrast: #632ca6;
+  --ui-status-in-progress-soft: #f2ecfc;
+
+  /* Brand */
+  --ui-brand: #632ca6;
+  --ui-brand-contrast: #451481;
+
+  /* Code syntax */
+  --ui-code-background: rgba(88, 95, 112, 0.05);
+  --ui-code-text: #1C2B34;
+  --ui-code-delimiter: #D97E00;
+  --ui-code-boolean: #6B37AB;
+  --ui-code-function: #2C63DB;
+  --ui-code-string: #038043;
+  --ui-code-keyword: #E01B73;
+  --ui-code-operator: #008645;
+  --ui-code-comment: #6A7287;
+
+  /* Data Viz */
+  --ui-dataviz-blue: #3598ec;
+  --ui-important: #facc00;
+
+  /* AI */
+  --ui-ai-primary: #5e6dd6;
+  --ui-ai-background-primary: #f0f2ff;
+  --ui-ai-background-secondary: #d9deff;
+
+  /* Shadows */
+  --ui-shadow-strength: rgba(36, 41, 49, 0.25);
+  --shadow-base: 0 0 1px rgba(36, 41, 49, 0.1);
+  --shadow-1: var(--shadow-base), 0 1px 2px var(--ui-shadow-strength);
+  --shadow-2: var(--shadow-base), 0 1px 5px var(--ui-shadow-strength);
+  --shadow-3: var(--shadow-base), 0 2px 8px var(--ui-shadow-strength);
+  --shadow-4: var(--shadow-base), 0 3px 11px var(--ui-shadow-strength);
+  --shadow-5: var(--shadow-base), 0 5px 20px var(--ui-shadow-strength);
+  --shadow-6: var(--shadow-base), 0 8px 36px var(--ui-shadow-strength);
+  --shadow-focus: 0 0 3px;
+}
+
+/* =================================================================
+   SEMANTIC COLORS — Dark Theme
+   ================================================================= */
+[data-theme="dark"] {
+  /* Scaffolding (cool-adjusted grays) */
+  --ui-background: #1a1b22;
+  --ui-background-secondary: #1f2029;
+  --ui-background-tertiary: #353641;
+  --ui-background-elevated: var(--ui-background-secondary);
+  --ui-background-shade: #353641;
+  --ui-border: #353641;
+  --ui-border-elevated: #232429;
+  --ui-placeholder: rgba(40, 41, 47, 0.75);
+
+  /* Text */
+  --ui-text: rgba(255, 255, 255, 0.76);
+  --ui-text-secondary: rgba(255, 255, 255, 0.51);
+  --ui-text-tertiary: rgba(255, 255, 255, 0.38);
+  --ui-text-disabled: rgba(255, 255, 255, 0.24);
+  --ui-text-knockout: #ffffff;
+
+  /* Icons */
+  --ui-icon: rgba(255, 255, 255, 0.48);
+  --ui-icon-secondary: rgba(255, 255, 255, 0.34);
+
+  /* Interaction */
+  --ui-interaction-primary: #3d8bd0;
+  --ui-interaction-primary-contrast: #579fdd;
+  --ui-interaction-secondary: #091222;
+  --ui-interaction-secondary-contrast: #0e1d36;
+  --ui-interaction-callout: #e50089;
+
+  /* Status */
+  --ui-status-danger: #d33043;
+  --ui-status-danger-contrast: #eb364b;
+  --ui-status-danger-soft: #2f0a0f;
+  --ui-status-warning: #cc9022;
+  --ui-status-warning-contrast: #e5a226;
+  --ui-status-warning-soft: #332408;
+  --ui-status-success: #349c50;
+  --ui-status-success-contrast: #52b76d;
+  --ui-status-success-soft: #0d2714;
+  --ui-status-other: #65626a;
+  --ui-status-other-contrast: #858387;
+  --ui-status-other-soft: #2c2b2b;
+  --ui-status-in-progress: #67309e;
+  --ui-status-in-progress-contrast: #7c3eb9;
+  --ui-status-in-progress-soft: #22053e;
+
+  /* Brand */
+  --ui-brand: #561d8c;
+  --ui-brand-contrast: #67309e;
+
+  /* Code syntax */
+  --ui-code-background: rgba(255, 255, 255, 0.05);
+  --ui-code-text: #E6E6E6;
+  --ui-code-delimiter: #FEC866;
+  --ui-code-boolean: #C48CFF;
+  --ui-code-function: #5BCEFF;
+  --ui-code-string: #43D698;
+  --ui-code-keyword: #FF80B6;
+  --ui-code-operator: #41EBA4;
+  --ui-code-comment: #8F969A;
+
+  /* Data Viz */
+  --ui-dataviz-blue: #6b9cc8;
+  --ui-important: #ebcf61;
+
+  /* AI */
+  --ui-ai-primary: #5e6dd6;
+  --ui-ai-background-primary: #080a1a;
+  --ui-ai-background-secondary: #1d2140;
+
+  /* Shadows */
+  --ui-shadow-strength: rgba(9, 9, 11, 0.88);
+}
+
+/* =================================================================
+   TYPOGRAPHY
+   ================================================================= */
+:root {
+  /* Font families */
+  --font-family-base: 'Noto Sans', 'Lucida Grande', 'Lucida Sans Unicode', sans-serif;
+  --font-family-mono: 'Roboto Mono', Menlo, 'Liberation Mono', Courier, monospace;
+
+  /* Font weights */
+  --font-weight-thin: 300;
+  --font-weight-normal: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Font sizes */
+  --font-xxs: 8px;
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 13px;
+  --font-lg: 15px;
+  --font-xl: 18px;
+  --font-xxl: 23px;
+
+  /* Monospace letter spacing */
+  --font-mono-letter-spacing: -0.01em;
+
+  /* Semantic heading scale (derived from size tokens) */
+  --h1-size: var(--font-xxl);   /* 23px */
+  --h2-size: var(--font-xl);    /* 18px */
+  --h3-size: var(--font-lg);    /* 15px */
+  --h4-size: var(--font-md);    /* 13px — same as body */
+  --body-size: var(--font-md);  /* 13px */
+  --small-size: var(--font-sm); /* 12px */
+  --code-size: var(--font-sm);  /* 12px */
+  --caption-size: var(--font-xs); /* 11px */
+}
+
+/* =================================================================
+   SPACING
+   ================================================================= */
+:root {
+  --spacing-xxs: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+}
+
+/* =================================================================
+   SIZING (Component heights)
+   ================================================================= */
+:root {
+  --height-xxs: 16px;
+  --height-xs: 20px;
+  --height-sm: 24px;
+  --height-md: 28px;
+  --height-lg: 36px;
+  --height-xl: 44px;
+  --height-xxl: 52px;
+}
+
+/* =================================================================
+   BORDERS
+   ================================================================= */
+:root {
+  --border-radius-md: 4px;
+  --border-radius-lg: 8px;
+  --border-width: 1px;
+}
+
+/* =================================================================
+   ANIMATION
+   ================================================================= */
+:root {
+  --animation-duration-short: 0.15s;
+  --animation-duration: 0.25s;
+}
+
+/* =================================================================
+   ELEVATION (z-index scale)
+   ================================================================= */
+:root {
+  --elevation-behind: -1;
+  --elevation-base: 0;
+  --elevation-content-header: 90;
+  --elevation-nav-background: 100;
+  --elevation-sidepanel-1: 210;
+  --elevation-nav-background-active: 300;
+  --elevation-nav-submenu: 310;
+  --elevation-top: 9999;
+}
+
+/* =================================================================
+   BREAKPOINTS
+   ================================================================= */
+:root {
+  --screen-sm-max: 750px;
+  --screen-md-max: 1030px;
+  --screen-lg-max: 1200px;
+  --screen-xl-max: 2000px;
+}
