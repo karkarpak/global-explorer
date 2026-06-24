@@ -177,7 +177,7 @@ function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx }) {
       {error && <div className="flight-error"><Icon.Cancel /> {error}</div>}
       <div className="batch-toggle">
         <button className="batch-toggle__btn" onClick={() => setBatchOpen(o => !o)}>
-          {batchOpen ? '− Hide bulk paste' : '+ Bulk paste routes'}
+          {batchOpen ? '− Hide bulk paste' : '+ Bulk routes'}
         </button>
       </div>
       {batchOpen && (
@@ -684,6 +684,37 @@ const SAMPLE_ROUTES = [
 { from: 'SYD', to: 'LAX' }, { from: 'LAX', to: 'NRT' },
 { from: 'NRT', to: 'HKG' }, { from: 'JFK', to: 'GRU' }];
 
+const FLIGHTS_STORAGE_KEY = 'global-explorer-flights';
+
+const DEFAULT_FLIGHTS = [
+{ from: 'JFK', to: 'CDG' },
+{ from: 'JFK', to: 'NRT' },
+{ from: 'LHR', to: 'SYD' }];
+
+function loadFlightsFromStorage() {
+  try {
+    const raw = localStorage.getItem(FLIGHTS_STORAGE_KEY);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter((f) =>
+    f && typeof f.from === 'string' && typeof f.to === 'string' &&
+    f.from.length === 3 && f.to.length === 3 &&
+    AIRPORTS[f.from] && AIRPORTS[f.to] && f.from !== f.to
+    );
+  } catch {
+    return null;
+  }
+}
+
+function saveFlightsToStorage(flights) {
+  try {
+    localStorage.setItem(FLIGHTS_STORAGE_KEY, JSON.stringify(flights));
+  } catch (err) {
+    console.warn('Failed to save flights to localStorage:', err);
+  }
+}
+
 
 /* ====== THEMES & TWEAK CONTROLS ====== */
 // Each theme reshapes the overall mood — paper, ink, country fill, sphere, water, route palette
@@ -791,14 +822,17 @@ function App() {
     document.body.dataset.mood = tweaks.mood;
   }, [tweaks.mood, tweaks.paperColor, theme.paper, theme.ink, theme.grat, theme.labelColor]);
 
-  const [flights, setFlights] = useState([
-  { from: 'JFK', to: 'CDG' },
-  { from: 'JFK', to: 'NRT' },
-  { from: 'LHR', to: 'SYD' }]
-  );
+  const [flights, setFlights] = useState(() => {
+    const saved = loadFlightsFromStorage();
+    return saved !== null ? saved : DEFAULT_FLIGHTS;
+  });
   const [projT, setProjT] = useState(0);
   const [hoverIdx, setHoverIdx] = useState(-1);
   const [countries, setCountries] = useState(null);
+
+  useEffect(() => {
+    saveFlightsToStorage(flights);
+  }, [flights]);
 
   useEffect(() => {
     loadCountries().then(setCountries).catch((err) => {
