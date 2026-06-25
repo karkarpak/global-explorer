@@ -321,6 +321,8 @@ body {
 
 /* ========== PROJECTION SLIDER ========== */
 .proj-slider-wrap {
+  --proj-inset: 8px;
+  --proj-thumb: 24px;
   position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
   width: min(560px, calc(100% - 48px));
   background: var(--ui-background); border: 1px solid var(--ui-border);
@@ -335,27 +337,34 @@ body {
 }
 .proj-slider__label:hover { color: var(--ui-text); background: var(--ui-interaction-secondary); }
 .proj-slider__label--active { color: var(--ui-interaction-primary-contrast); }
+.proj-slider__label--center { margin-left: 14px; }
 .proj-slider {
-  position: relative; height: 24px;
+  position: relative; height: var(--proj-thumb);
 }
 .proj-slider__track {
-  position: absolute; left: 0; right: 0; top: 11px; height: 2px;
+  position: absolute; left: var(--proj-inset); right: var(--proj-inset);
+  top: calc(var(--proj-thumb) / 2 - 1px); height: 2px;
   background: var(--ui-background-tertiary); border-radius: 1px;
 }
 .proj-slider__fill {
-  position: absolute; left: 0; top: 11px; height: 2px;
+  position: absolute; left: var(--proj-inset);
+  top: calc(var(--proj-thumb) / 2 - 1px); height: 2px;
   background: linear-gradient(to right, var(--ui-interaction-primary), var(--ui-status-in-progress), var(--ui-interaction-callout));
   border-radius: 1px;
 }
 .proj-slider__tick {
-  position: absolute; top: 6px; width: 2px; height: 12px;
+  position: absolute; top: calc(var(--proj-thumb) / 2 - 6px);
+  width: 2px; height: 12px;
   background: var(--ui-background-tertiary); border-radius: 1px;
-  transform: translateX(-1px);
 }
+.proj-slider__tick--start { left: var(--proj-inset); }
+.proj-slider__tick--center { left: 50%; transform: translateX(-50%); }
+.proj-slider__tick--end { right: var(--proj-inset); }
 .proj-slider__thumb {
-  position: absolute; top: 0; width: 24px; height: 24px;
+  position: absolute; top: 0;
+  width: var(--proj-thumb); height: var(--proj-thumb);
   background: white; border: 2px solid var(--ui-interaction-primary);
-  border-radius: 50%; transform: translateX(-12px); cursor: grab;
+  border-radius: 50%; cursor: grab;
   box-shadow: var(--shadow-2);
   transition: border-color 0.2s;
 }
@@ -526,6 +535,7 @@ body {
 
   /* Projection slider hugs the bottom of the globe area */
   .proj-slider-wrap {
+    --proj-thumb: 28px;
     bottom: max(14px, env(safe-area-inset-bottom));
     padding: 11px 14px 10px;
     width: min(560px, calc(100% - 24px));

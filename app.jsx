@@ -400,10 +400,21 @@ function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx, onSa
 function ProjSlider({ value, onChange }) {
   const trackRef = useRef(null);
   const [dragging, setDragging] = useState(false);
+  const sliderMetrics = () => {
+    const wrap = trackRef.current?.closest('.proj-slider-wrap');
+    if (!wrap) return { inset: 8, thumb: 24 };
+    const cs = getComputedStyle(wrap);
+    return {
+      inset: parseFloat(cs.getPropertyValue('--proj-inset')) || 8,
+      thumb: parseFloat(cs.getPropertyValue('--proj-thumb')) || 24
+    };
+  };
   const setFromEvent = (e) => {
     const r = trackRef.current.getBoundingClientRect();
     const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-    const pct = Math.max(0, Math.min(1, x / r.width));
+    const { inset, thumb } = sliderMetrics();
+    const usable = r.width - inset * 2 - thumb;
+    const pct = Math.max(0, Math.min(1, (x - inset - thumb / 2) / usable));
     onChange(pct);
   };
   useEffect(() => {
@@ -421,13 +432,19 @@ function ProjSlider({ value, onChange }) {
       window.removeEventListener('touchend', onUp);
     };
   }, [dragging]);
-  const labels = [{ v: 0, name: 'Globe' }, { v: 0.5, name: 'Robinson' }, { v: 1, name: 'Mercator' }];
+  const labels = [
+    { v: 0, name: 'Globe', tick: 'start' },
+    { v: 0.5, name: 'Robinson', tick: 'center', align: 'center' },
+    { v: 1, name: 'Mercator', tick: 'end' }
+  ];
   const closestLabel = labels.reduce((a, b) => Math.abs(b.v - value) < Math.abs(a.v - value) ? b : a);
+  const thumbLeft = `calc(var(--proj-inset) + (100% - 2 * var(--proj-inset) - var(--proj-thumb)) * ${value})`;
+  const fillWidth = `calc((100% - 2 * var(--proj-inset) - var(--proj-thumb)) * ${value} + var(--proj-thumb) / 2)`;
   return (
     <div className="proj-slider-wrap">
       <div className="proj-slider__labels">
         {labels.map((l) =>
-        <div key={l.v} className={`proj-slider__label ${closestLabel.v === l.v ? 'proj-slider__label--active' : ''}`}
+        <div key={l.v} className={`proj-slider__label${l.align ? ` proj-slider__label--${l.align}` : ''} ${closestLabel.v === l.v ? 'proj-slider__label--active' : ''}`}
         onClick={() => onChange(l.v)}>{l.name}</div>
         )}
       </div>
@@ -435,9 +452,9 @@ function ProjSlider({ value, onChange }) {
       onMouseDown={(e) => {setDragging(true);setFromEvent(e);}}
       onTouchStart={(e) => {setDragging(true);setFromEvent(e);}}>
         <div className="proj-slider__track"></div>
-        <div className="proj-slider__fill" style={{ width: `${value * 100}%` }}></div>
-        {labels.map((l) => <div key={l.v} className="proj-slider__tick" style={{ left: `${l.v * 100}%` }}></div>)}
-        <div className={`proj-slider__thumb ${dragging ? 'proj-slider__thumb--dragging' : ''}`} style={{ left: `${value * 100}%` }}>
+        <div className="proj-slider__fill" style={{ width: fillWidth }}></div>
+        {labels.map((l) => <div key={l.v} className={`proj-slider__tick proj-slider__tick--${l.tick}`}></div>)}
+        <div className={`proj-slider__thumb ${dragging ? 'proj-slider__thumb--dragging' : ''}`} style={{ left: thumbLeft }}>
           <div className="proj-slider__readout">{closestLabel.name} · t={value.toFixed(2)}</div>
         </div>
       </div>
