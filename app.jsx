@@ -29,7 +29,11 @@ const Icon = {
   Arrow: () => <svg viewBox="0 0 16 16" fill="currentColor" style={{ width: 12, height: 12 }}><path d="M8.4 3.4a.75.75 0 011.06 0l3.6 3.6a.75.75 0 010 1.06l-3.6 3.6a.75.75 0 11-1.06-1.06L10.94 8.5H3.5a.75.75 0 010-1.5h7.44L8.4 4.46a.75.75 0 010-1.06z" /></svg>,
   ZoomIn: () => <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7 2.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9zM1 7a6 6 0 1110.74 3.69l3.03 3.03a.75.75 0 11-1.06 1.06l-3.03-3.03A6 6 0 011 7zm6.75-2.25a.75.75 0 00-1.5 0v1.5h-1.5a.75.75 0 000 1.5h1.5v1.5a.75.75 0 001.5 0v-1.5h1.5a.75.75 0 000-1.5h-1.5v-1.5z" /></svg>,
   ZoomOut: () => <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7 2.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9zM1 7a6 6 0 1110.74 3.69l3.03 3.03a.75.75 0 11-1.06 1.06l-3.03-3.03A6 6 0 011 7zm3.75 0a.75.75 0 01.75-.75h3a.75.75 0 010 1.5h-3a.75.75 0 01-.75-.75z" /></svg>,
-  Reset: () => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M3 8a5 5 0 119 3" /><path d="M3 11.5V8h3.5" /></svg>
+  Reset: () => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="4.3" /><path d="M8 1.3v2.2M8 12.5v2.2M1.3 8h2.2M12.5 8h2.2" strokeLinecap="round" /><circle cx="8" cy="8" r="1.05" fill="currentColor" stroke="none" /></svg>,
+  Sliders: () => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M2 5h7M12 5h2M2 11h2M7 11h7" /><circle cx="10.5" cy="5" r="1.6" fill="currentColor" stroke="none" /><circle cx="5.5" cy="11" r="1.6" fill="currentColor" stroke="none" /></svg>,
+  Alert: () => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"><path d="M8 1.9 1.4 13.4h13.2L8 1.9z" /><path d="M8 6.2v3.1" strokeLinecap="round" /><circle cx="8" cy="11.3" r="0.55" fill="currentColor" stroke="none" /></svg>,
+  Chevron: () => <svg viewBox="0 0 16 16" fill="currentColor" className="btn__chevron"><path d="M3.2 5.8a.75.75 0 011.06 0L8 9.54l3.74-3.74a.75.75 0 111.06 1.06l-4.27 4.27a.75.75 0 01-1.06 0L3.2 6.86a.75.75 0 010-1.06z" /></svg>,
+  Caret: () => <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3.2 5.8a.75.75 0 011.06 0L8 9.54l3.74-3.74a.75.75 0 111.06 1.06l-4.27 4.27a.75.75 0 01-1.06 0L3.2 6.86a.75.75 0 010-1.06z" /></svg>
 };
 
 // ====== TOPOJSON LOADER ======
@@ -78,7 +82,62 @@ function decodeTopo(topo) {
 }
 
 /* ====== HEADER ====== */
-function Header({ onSample, onClear }) {
+const STYLE_GROUPS = [
+  { key: 'mood', title: 'Mood', options: [
+    { value: 'daylight', label: 'Daylight' },
+    { value: 'blueprint', label: 'Blueprint' },
+    { value: 'vintage', label: 'Vintage' },
+    { value: 'neon', label: 'Neon' }
+  ] },
+  { key: 'routeStyle', title: 'Routes', options: [
+    { value: 'hairline', label: 'Thin' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'bold', label: 'Bold' },
+    { value: 'dashed', label: 'Dashed' }
+  ] },
+  { key: 'cityMark', title: 'Cities', options: [
+    { value: 'dot', label: 'Dot' },
+    { value: 'pin', label: 'Pin' },
+    { value: 'halo', label: 'Halo' },
+    { value: 'cross', label: 'Cross' }
+  ] }
+];
+
+function StyleMenu({ tweaks, onStyle }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+  return (
+    <div className="style-menu" ref={ref}>
+      <button className={`btn ${open ? 'btn--active' : ''}`} onClick={() => setOpen((o) => !o)}>
+        <Icon.Sliders /> Style <Icon.Chevron />
+      </button>
+      {open &&
+      <div className="style-pop">
+        {STYLE_GROUPS.map((g) =>
+        <div key={g.key} className="style-pop__group">
+          <div className="style-pop__title">{g.title}</div>
+          <div className="style-pop__opts">
+            {g.options.map((o) =>
+            <button key={o.value}
+            className={`style-pop__opt ${tweaks[g.key] === o.value ? 'style-pop__opt--active' : ''}`}
+            onClick={() => onStyle(g.key, o.value)}>{o.label}</button>
+            )}
+          </div>
+        </div>
+        )}
+      </div>
+      }
+    </div>);
+
+}
+
+function Header({ tweaks, onStyle }) {
   return (
     <div className="product-header">
       <div className="product-header__title">
@@ -87,24 +146,50 @@ function Header({ onSample, onClear }) {
         <span className="product-header__sub">Flight paths</span>
       </div>
       <div className="product-header__right">
-        <button className="btn" onClick={onSample}>Load sample routes</button>
-        <button className="btn" onClick={onClear}>Clear all</button>
+        <StyleMenu tweaks={tweaks} onStyle={onStyle} />
       </div>
     </div>);
 
 }
 
 /* ====== SIDEBAR ====== */
-function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx }) {
+function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx, onSample, onClear, collapsed, onToggleCollapse }) {
   const tweakCtx = useTheme();
   const currentTheme = tweakCtx ? tweakCtx.theme : THEMES.daylight;
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [error, setError] = useState('');
+  const [activeField, setActiveField] = useState(null); // 'from' | 'to' | null
+  const [acIndex, setAcIndex] = useState(0); // highlighted autocomplete row
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchText, setBatchText] = useState('');
   const [batchMsg, setBatchMsg] = useState('');
   const fromRef = useRef(null);
+  const toRef = useRef(null);
+
+  // Airport autocomplete: rank by IATA-code prefix first, then city / name match.
+  const suggest = (q) => {
+    const u = q.trim().toUpperCase();
+    if (!u) return [];
+    const ql = q.trim().toLowerCase();
+    const codeHits = [];
+    const textHits = [];
+    for (const code in AIRPORTS) {
+      if (code.startsWith(u)) { codeHits.push(code); continue; }
+      const a = AIRPORTS[code];
+      if (a.city.toLowerCase().includes(ql) || a.name.toLowerCase().includes(ql)) textHits.push(code);
+    }
+    return codeHits.concat(textHits).slice(0, 7);
+  };
+  const pick = (field, code) => {
+    if (field === 'from') { setFrom(code); setActiveField(null); toRef.current && toRef.current.focus(); }
+    else { setTo(code); setActiveField(null); }
+  };
+
+  // Live suggestion list for whichever field is focused.
+  const acQuery = activeField === 'from' ? from : activeField === 'to' ? to : '';
+  const suggestions = activeField && acQuery.trim() ? suggest(acQuery) : [];
+  useEffect(() => { setAcIndex(0); }, [activeField, from, to]);
 
   const submit = () => {
     setError('');
@@ -118,7 +203,30 @@ function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx }) {
     setFrom('');setTo('');
     fromRef.current && fromRef.current.focus();
   };
-  const onKey = (e) => {if (e.key === 'Enter') submit();};
+  // Shared keydown handler: arrow keys walk the suggestion list, Enter picks the
+  // highlighted suggestion (or advances FROM→TO / submits), Esc closes the dropdown.
+  const handleKey = (e, field) => {
+    if (e.key === 'ArrowDown') {
+      if (suggestions.length) { e.preventDefault(); setAcIndex((i) => Math.min(suggestions.length - 1, i + 1)); }
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      if (suggestions.length) { e.preventDefault(); setAcIndex((i) => Math.max(0, i - 1)); }
+      return;
+    }
+    if (e.key === 'Escape') { setActiveField(null); return; }
+    if (e.key !== 'Enter') return;
+    if (suggestions.length && acIndex >= 0 && acIndex < suggestions.length) {
+      e.preventDefault();
+      pick(field, suggestions[acIndex]);
+      return;
+    }
+    if (field === 'from' && from.trim().length === 3 && to.trim().length < 3) {
+      toRef.current && toRef.current.focus();
+    } else {
+      submit();
+    }
+  };
 
   const submitBatch = () => {
     setBatchMsg('');
@@ -157,28 +265,67 @@ function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx }) {
     <div className="sidebar">
       <div className="sidebar__header">
         <div className="sidebar__title">
-          Flights
-          <span className="count-pill">{flights.length}</span>
+          <span className="sidebar__title-left">Flights <span className="count-pill">{flights.length}</span></span>
+          <button className="sidebar__collapse" onClick={onToggleCollapse} aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}>
+            <Icon.Caret />
+          </button>
         </div>
         <div className="sidebar__hint">Add routes by IATA code, e.g. JFK → CDG</div>
       </div>
+      <div className="sidebar__body">
       <div className="flight-input">
         <div className="flight-input__field">
           <input ref={fromRef} className="flight-input__code" placeholder="FROM" value={from} maxLength={3}
-          onChange={(e) => setFrom(e.target.value.toUpperCase())} onKeyDown={onKey} />
+          onFocus={() => setActiveField('from')}
+          onBlur={() => setTimeout(() => setActiveField((f) => f === 'from' ? null : f), 150)}
+          onChange={(e) => setFrom(e.target.value.toUpperCase())} onKeyDown={(e) => handleKey(e, 'from')} />
           <span className="flight-input__sep">→</span>
-          <input className="flight-input__code" placeholder="TO" value={to} maxLength={3}
-          onChange={(e) => setTo(e.target.value.toUpperCase())} onKeyDown={onKey} />
+          <input ref={toRef} className="flight-input__code" placeholder="TO" value={to} maxLength={3}
+          onFocus={() => setActiveField('to')}
+          onBlur={() => setTimeout(() => setActiveField((f) => f === 'to' ? null : f), 150)}
+          onChange={(e) => setTo(e.target.value.toUpperCase())} onKeyDown={(e) => handleKey(e, 'to')} />
         </div>
         <button className="btn-add" onClick={submit} disabled={from.length < 3 || to.length < 3} title="Add flight">
           <Icon.Plus />
         </button>
+        {(() => {
+          if (!activeField) return null;
+          const q = activeField === 'from' ? from : to;
+          // Empty FROM → offer the sample-routes shortcut
+          if (activeField === 'from' && q.length === 0) {
+            return (
+              <div className="input-dropdown">
+                <button className="input-dropdown__item" onMouseDown={(e) => { e.preventDefault(); onSample(); setActiveField(null); }}>
+                  Load sample routes
+                </button>
+              </div>);
+          }
+          const hits = suggestions;
+          if (hits.length === 0) return null;
+          return (
+            <div className="input-dropdown">
+              {hits.map((code, idx) => {
+                const a = AIRPORTS[code];
+                return (
+                  <button key={code}
+                  className={`input-dropdown__item input-dropdown__item--ac ${idx === acIndex ? 'input-dropdown__item--active' : ''}`}
+                  onMouseEnter={() => setAcIndex(idx)}
+                  onMouseDown={(e) => { e.preventDefault(); pick(activeField, code); }}>
+                    <span className="ac-code">{code}</span>
+                    <span className="ac-meta">{a.city} · {a.name}</span>
+                  </button>);
+              })}
+            </div>);
+        })()}
       </div>
-      {error && <div className="flight-error"><Icon.Cancel /> {error}</div>}
+      {error && <div className="flight-error"><Icon.Alert /> {error}</div>}
       <div className="batch-toggle">
         <button className="batch-toggle__btn" onClick={() => setBatchOpen(o => !o)}>
-          {batchOpen ? '− Hide bulk paste' : '+ Bulk routes'}
+          {batchOpen ? '− Hide' : '+ Multiple routes'}
         </button>
+        {flights.length > 0 &&
+        <button className="batch-toggle__btn batch-toggle__btn--danger" onClick={onClear}>Clear all</button>
+        }
       </div>
       {batchOpen && (
         <div className="batch-input">
@@ -228,6 +375,7 @@ function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx }) {
           <span style={{ fontFamily: 'var(--font-family-mono)', fontWeight: 600, color: 'var(--ui-text)' }}>{totalKm.toLocaleString()} km</span>
         </div>
       }
+      </div>
     </div>);
 
 }
@@ -287,7 +435,7 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
   const { theme, routeStyle, cityMark, mapOffsetY = 0 } = tweakCtx;
   const stageRef = useRef(null);
   const [size, setSize] = useState({ w: 800, h: 600 });
-  const [rotation, setRotation] = useState({ lambda: -10, phi: 20 });
+  const [rotation, setRotation] = useState({ lambda: -10, phi: -22 });
   const [lambdaShift, setLambdaShift] = useState(0); // for flat projections
   const [zoom, setZoom] = useState(1);
   const [verticalPan, setVerticalPan] = useState(0); // y-only pan in flat
@@ -297,6 +445,11 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
   const [pinnedPos, setPinnedPos] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const dragStart = useRef(null);
+  // Touch support: snapshot of the active gesture + live values for the move handler.
+  const touchRef = useRef(null);
+  const [touchActive, setTouchActive] = useState(false);
+  const liveRef = useRef({});
+  liveRef.current = { rotation, lambdaShift, verticalPan, zoom };
 
   useEffect(() => {
     if (!stageRef.current) return;
@@ -369,6 +522,68 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
     const dz = -e.deltaY * 0.0015;
     setZoom((z) => Math.max(0.5, Math.min(8, z + dz * z)));
   };
+
+  // ── Touch: 1 finger = drag-rotate / belt-pan, 2 fingers = pinch-zoom ──
+  const touchDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const onTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      setHoverCountry(null);
+      setPinnedCountry(null);
+      touchRef.current = { mode: 'drag', x: t.clientX, y: t.clientY, rot: { ...rotation } };
+      setDragging(true);
+      setTouchActive(true);
+    } else if (e.touches.length === 2) {
+      touchRef.current = { mode: 'pinch', dist: touchDist(e.touches[0], e.touches[1]), zoom };
+      setDragging(false);
+      setTouchActive(true);
+    }
+  };
+  useEffect(() => {
+    if (!touchActive) return;
+    const onMove = (e) => {
+      const st = touchRef.current;
+      if (!st) return;
+      e.preventDefault();
+      if (st.mode === 'pinch' && e.touches.length >= 2) {
+        const ratio = touchDist(e.touches[0], e.touches[1]) / st.dist;
+        setZoom(Math.max(0.5, Math.min(8, st.zoom * ratio)));
+        return;
+      }
+      if (st.mode === 'drag' && e.touches.length >= 1) {
+        const t = e.touches[0];
+        const dx = t.clientX - st.x, dy = t.clientY - st.y;
+        const z = liveRef.current.zoom;
+        if (projT < 0.5) {
+          const sensitivity = 0.4 / z;
+          setRotation({ lambda: st.rot.lambda + dx * sensitivity, phi: st.rot.phi - dy * sensitivity });
+        } else {
+          const projScale = Math.min(size.w, size.h) * 0.42 * z;
+          setRotation({ lambda: st.rot.lambda + dx / projScale * 180, phi: st.rot.phi });
+        }
+      }
+    };
+    const onEnd = (e) => {
+      if (e.touches.length === 0) {
+        setDragging(false);
+        setTouchActive(false);
+        touchRef.current = null;
+      } else if (e.touches.length === 1) {
+        // Dropped from pinch to one finger → continue as a drag from the current rotation.
+        const t = e.touches[0];
+        touchRef.current = { mode: 'drag', x: t.clientX, y: t.clientY, rot: { ...liveRef.current.rotation } };
+        setDragging(true);
+      }
+    };
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('touchcancel', onEnd);
+    return () => {
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('touchcancel', onEnd);
+    };
+  }, [touchActive, projT, size]);
 
   const onMouseMove = (e) => {
     const r = stageRef.current.getBoundingClientRect();
@@ -449,6 +664,7 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
   return (
     <div ref={stageRef} className={`globe-stage ${dragging ? 'globe-stage--dragging' : ''}`}
     onMouseDown={onMouseDown} onWheel={onWheel} onMouseMove={onMouseMove}
+    onTouchStart={onTouchStart}
     onMouseLeave={() => setHoverCountry(null)}>
       <svg className="globe-svg">
         <defs>
@@ -655,9 +871,9 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
 
       {/* Zoom controls */}
       <div className="zoom-controls">
-        <button className="zoom-controls__btn" onClick={() => setZoom((z) => Math.min(8, z * 1.3))} title="Zoom in"><Icon.ZoomIn /></button>
-        <button className="zoom-controls__btn" onClick={() => setZoom((z) => Math.max(0.5, z / 1.3))} title="Zoom out"><Icon.ZoomOut /></button>
-        <button className="zoom-controls__btn" onClick={() => {setZoom(1);setLambdaShift(0);setVerticalPan(0);setRotation({ lambda: -10, phi: 20 });}} title="Reset view"><Icon.Reset /></button>
+        <button className="zoom-controls__btn" data-tip="Zoom in" onClick={() => setZoom((z) => Math.min(8, z * 1.3))}><Icon.ZoomIn /></button>
+        <button className="zoom-controls__btn" data-tip="Zoom out" onClick={() => setZoom((z) => Math.max(0.5, z / 1.3))}><Icon.ZoomOut /></button>
+        <button className="zoom-controls__btn" data-tip="Reset view" onClick={() => {setZoom(1);setLambdaShift(0);setVerticalPan(0);setRotation({ lambda: -10, phi: -22 });}}><Icon.Reset /></button>
       </div>
 
       {!countries &&
@@ -683,37 +899,6 @@ const SAMPLE_ROUTES = [
 { from: 'DXB', to: 'SIN' }, { from: 'SIN', to: 'SYD' },
 { from: 'SYD', to: 'LAX' }, { from: 'LAX', to: 'NRT' },
 { from: 'NRT', to: 'HKG' }, { from: 'JFK', to: 'GRU' }];
-
-const FLIGHTS_STORAGE_KEY = 'global-explorer-flights';
-
-const DEFAULT_FLIGHTS = [
-{ from: 'JFK', to: 'CDG' },
-{ from: 'JFK', to: 'NRT' },
-{ from: 'LHR', to: 'SYD' }];
-
-function loadFlightsFromStorage() {
-  try {
-    const raw = localStorage.getItem(FLIGHTS_STORAGE_KEY);
-    if (raw === null) return null;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return null;
-    return parsed.filter((f) =>
-    f && typeof f.from === 'string' && typeof f.to === 'string' &&
-    f.from.length === 3 && f.to.length === 3 &&
-    AIRPORTS[f.from] && AIRPORTS[f.to] && f.from !== f.to
-    );
-  } catch {
-    return null;
-  }
-}
-
-function saveFlightsToStorage(flights) {
-  try {
-    localStorage.setItem(FLIGHTS_STORAGE_KEY, JSON.stringify(flights));
-  } catch (err) {
-    console.warn('Failed to save flights to localStorage:', err);
-  }
-}
 
 
 /* ====== THEMES & TWEAK CONTROLS ====== */
@@ -797,6 +982,28 @@ function App() {
     "mapOffsetY": -20
   }/*EDITMODE-END*/);
 
+  // Persist the viewer-facing style choices (mood / routeStyle / cityMark) to
+  // localStorage so anyone viewing the project — not just the editor — can change
+  // them and have the choice stick across reloads. setTweak alone only persists for
+  // the owner (via the host), and the Tweaks panel isn't shown to viewers at all.
+  const STYLE_KEYS = ['mood', 'routeStyle', 'cityMark'];
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ge_style') || '{}');
+      const edits = {};
+      STYLE_KEYS.forEach((k) => { if (saved[k] !== undefined) edits[k] = saved[k]; });
+      if (Object.keys(edits).length) setTweak(edits);
+    } catch (e) {/* ignore */}
+  }, []);
+  const setStyle = useCallback((k, v) => {
+    setTweak(k, v);
+    try {
+      const saved = JSON.parse(localStorage.getItem('ge_style') || '{}');
+      saved[k] = v;
+      localStorage.setItem('ge_style', JSON.stringify(saved));
+    } catch (e) {/* ignore */}
+  }, [setTweak]);
+
   const baseTheme = THEMES[tweaks.mood] || THEMES.daylight;
   // Allow paperColor tweak to override mood's paper background
   const theme = tweaks.paperColor
@@ -822,17 +1029,38 @@ function App() {
     document.body.dataset.mood = tweaks.mood;
   }, [tweaks.mood, tweaks.paperColor, theme.paper, theme.ink, theme.grat, theme.labelColor]);
 
+  // Persist user-created routes to localStorage so they survive a refresh or a
+  // return visit. If nothing has been saved yet (first visit), seed with a few
+  // example routes. A saved empty array (user cleared all) is respected.
+  const FLIGHTS_KEY = 'ge_flights';
   const [flights, setFlights] = useState(() => {
-    const saved = loadFlightsFromStorage();
-    return saved !== null ? saved : DEFAULT_FLIGHTS;
+    try {
+      const raw = localStorage.getItem(FLIGHTS_KEY);
+      if (raw !== null) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          // Drop any routes whose airports are no longer in the dataset.
+          return parsed.filter((f) => f && AIRPORTS[f.from] && AIRPORTS[f.to]);
+        }
+      }
+    } catch (e) {/* ignore corrupt storage */}
+    return [
+      { from: 'JFK', to: 'CDG' },
+      { from: 'JFK', to: 'NRT' },
+      { from: 'LHR', to: 'SYD' }
+    ];
   });
+
+  // Save on every change (including clearing to empty).
+  useEffect(() => {
+    try {
+      localStorage.setItem(FLIGHTS_KEY, JSON.stringify(flights));
+    } catch (e) {/* ignore */}
+  }, [flights]);
   const [projT, setProjT] = useState(0);
   const [hoverIdx, setHoverIdx] = useState(-1);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [countries, setCountries] = useState(null);
-
-  useEffect(() => {
-    saveFlightsToStorage(flights);
-  }, [flights]);
 
   useEffect(() => {
     loadCountries().then(setCountries).catch((err) => {
@@ -850,19 +1078,19 @@ function App() {
   return (
     <TweakCtx.Provider value={{ theme, routeStyle, cityMark: tweaks.cityMark, mapOffsetY: tweaks.mapOffsetY }}>
     <div className="app-shell">
-      <Header onSample={loadSample} onClear={clearAll} />
-      <div className="explorer-layout">
-        <Sidebar flights={flights} onAdd={addFlight} onAddBatch={addBatch} onRemove={removeFlight} onHover={setHoverIdx} hoverIdx={hoverIdx} />
+      <Header tweaks={tweaks} onStyle={setStyle} />
+      <div className={`explorer-layout ${panelCollapsed ? 'explorer-layout--collapsed' : ''}`}>
+        <Sidebar flights={flights} onAdd={addFlight} onAddBatch={addBatch} onRemove={removeFlight} onHover={setHoverIdx} hoverIdx={hoverIdx} onSample={loadSample} onClear={clearAll} collapsed={panelCollapsed} onToggleCollapse={() => setPanelCollapsed((c) => !c)} />
         <div className="main">
           <GlobeStage flights={flights} hoverIdx={hoverIdx} projT={projT} countries={countries} />
           <ProjSlider value={projT} onChange={setProjT} />
         </div>
       </div>
       <TweaksPanel title="Tweaks">
-        <TweakSection title="Mood" subtitle="Reshapes the whole palette">
+        <TweakSection label="Mood">
           <TweakRadio
             value={tweaks.mood}
-            onChange={(v) => setTweak('mood', v)}
+            onChange={(v) => setStyle('mood', v)}
             options={[
               { value: 'daylight', label: 'Daylight' },
               { value: 'blueprint', label: 'Blueprint' },
@@ -871,34 +1099,31 @@ function App() {
             ]}
           />
         </TweakSection>
-        <TweakSection title="Background" subtitle="Custom paper color (overrides mood)">
+        <TweakSection label="Background">
           <TweakColor
             value={tweaks.paperColor || baseTheme.paper}
             onChange={(v) => setTweak('paperColor', v)}
           />
           {tweaks.paperColor && (
-            <TweakButton onClick={() => setTweak('paperColor', '')}>
-              Reset to mood default
-            </TweakButton>
+            <TweakButton label="Reset to mood default" onClick={() => setTweak('paperColor', '')} />
           )}
         </TweakSection>
-        <TweakSection title="Route style" subtitle="How flight paths are drawn">
+        <TweakSection label="Routes">
           <TweakRadio
             value={tweaks.routeStyle}
-            onChange={(v) => setTweak('routeStyle', v)}
+            onChange={(v) => setStyle('routeStyle', v)}
             options={[
-              { value: 'hairline', label: 'Hairline' },
+              { value: 'hairline', label: 'Thin' },
               { value: 'medium', label: 'Medium' },
               { value: 'bold', label: 'Bold' },
-              { value: 'glow', label: 'Glow' },
               { value: 'dashed', label: 'Dashed' }
             ]}
           />
         </TweakSection>
-        <TweakSection title="City marks" subtitle="Airport glyph">
+        <TweakSection label="Cities">
           <TweakRadio
             value={tweaks.cityMark}
-            onChange={(v) => setTweak('cityMark', v)}
+            onChange={(v) => setStyle('cityMark', v)}
             options={[
               { value: 'dot', label: 'Dot' },
               { value: 'pin', label: 'Pin' },
@@ -907,7 +1132,7 @@ function App() {
             ]}
           />
         </TweakSection>
-        <TweakSection title="Map position" subtitle="Vertical offset (px)">
+        <TweakSection label="Map position">
           <TweakSlider
             value={tweaks.mapOffsetY}
             onChange={(v) => setTweak('mapOffsetY', v)}
