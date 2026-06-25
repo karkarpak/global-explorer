@@ -337,7 +337,7 @@ body {
 }
 .proj-slider__label:hover { color: var(--ui-text); background: var(--ui-interaction-secondary); }
 .proj-slider__label--active { color: var(--ui-interaction-primary-contrast); }
-.proj-slider__label--center { margin-left: 14px; }
+.proj-slider__label--center { margin-left: 18px; }
 .proj-slider {
   position: relative; height: var(--proj-thumb);
 }
