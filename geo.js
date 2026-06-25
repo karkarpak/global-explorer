@@ -104,13 +104,13 @@ function project(lon, lat, t, rotation) {
   // Back-facing points have no meaningful ortho coordinate (they'd overlap the front).
   // For the unwrap feel, place back points at the silhouette of the orthographic sphere
   // (lat preserved, lon clamped to ±90 in rotated frame — i.e. the visible edge).
-  // From there they slide outward to their Robinson position as t grows.
+  // From there they slide outward to their Robinson position as t grows. Keeping every
+  // back point pinned to this silhouette edge is what fills the globe boundary right up
+  // to the rim (no empty gap). The horizontal "stripe" these can form across the deep
+  // antimeridian seam is removed in ringPath by breaking the subpath at that seam.
   let fromX = from.x, fromY = from.y;
   if (!r.frontFacing && t < 0.5) {
     const dtr = Math.PI / 180;
-    const sideLon = r.lon >= 0 ? 90 : -90;
-    const silhouette = orthographic(sideLon, r.lat, { lambda: -rotation.lambda || 0, phi: -(rotation.phi || 0) });
-    // Simpler: silhouette x = ±cos(lat'), y = -sin(lat')
     fromX = (r.lon >= 0 ? 1 : -1) * Math.cos(r.lat * dtr);
     fromY = -Math.sin(r.lat * dtr);
   }
@@ -123,17 +123,85 @@ function project(lon, lat, t, rotation) {
   };
 }
 
+// Blended flat position (Robinson↔Mercator) for an UNWRAPPED rotated lon/lat.
+// Both projections are linear in longitude, so rlon may lie outside [-180,180]
+// (used for belt repetition); we deliberately never re-wrap it here.
+function flatPointXY(rlon, rlat, t) {
+  const rob = robinson(rlon, rlat);
+  if (t >= 1) return mercator(rlon, rlat);
+  const merc = mercator(rlon, rlat);
+  const localT = (t - 0.5) * 2;
+  const e = localT * localT * (3 - 2 * localT);
+  return {
+    x: rob.x * (1 - e) + merc.x * e,
+    y: rob.y * (1 - e) + merc.y * e
+  };
+}
+
+// Belt renderer for the flat projections (t >= 0.5, Robinson → Mercator).
+// Rotates each ring into the viewer frame, then UNWRAPS its longitudes so the ring
+// is one continuous curve (no ±180° jumps). It renders the ring plus ±360° copies and
+// lets the SVG clip outline trim the overflow. With no splitting, wrap-around polygons
+// (Antarctica's bottom band, Russia, Fiji) stay closed and fill correctly.
+function ringPathFlat(ring, t, effRot, scale, cx, cy, closed) {
+  if (ring.length < 2) return '';
+  // Rotate into the viewer frame and unwrap longitudes into one continuous run.
+  const pts = [];
+  let prev = null, sum = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const r = rotateLonLat(ring[i][0], ring[i][1], effRot);
+    let ulon = r.lon;
+    if (prev !== null) {
+      while (ulon - prev > 180) ulon -= 360;
+      while (ulon - prev < -180) ulon += 360;
+    }
+    prev = ulon;
+    sum += ulon;
+    pts.push({ ulon, lat: r.lat });
+  }
+  // Recenter the unwrapped ring so its body lands inside the ±180° window.
+  const shift = -360 * Math.round((sum / pts.length) / 360);
+
+  let path = '';
+  // Belt copies cover the viewport; the SVG clip trims whatever overflows.
+  for (const off of [-360, 0, 360]) {
+    const base = shift + off;
+    let mn = Infinity, mx = -Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      const l = pts[i].ulon + base;
+      if (l < mn) mn = l;
+      if (l > mx) mx = l;
+    }
+    // Skip copies entirely outside the visible ±180° longitude window.
+    if (mx < -185 || mn > 185) continue;
+    let d = '';
+    for (let i = 0; i < pts.length; i++) {
+      const p = flatPointXY(pts[i].ulon + base, pts[i].lat, t);
+      d += (i === 0 ? 'M' : 'L') + (cx + p.x * scale).toFixed(2) + ' ' + (cy + p.y * scale).toFixed(2);
+    }
+    if (closed) d += 'Z';
+    path += d;
+  }
+  return path;
+}
+
 // Single-tile polyline. The longitude rotation is handled inside project() via the rotation arg.
 // Here we just need to detect when consecutive projected points jump across the screen
 // (antimeridian wrap on flat) and start a new subpath there.
 function ringPath(ring, t, rotation, scale, cx, cy, lambdaShift = 0, closed = false) {
   // Combine lambdaShift into rotation.lambda — both ultimately rotate longitude
   const effRot = { lambda: (rotation.lambda || 0) + lambdaShift, phi: rotation.phi || 0 };
+  // Flat projections (Robinson → Mercator): belt-render in continuous longitude so
+  // wrap-around polygons stay closed and fill. The globe/unfold morph (t < 0.5) below
+  // is untouched.
+  if (t >= 0.5) return ringPathFlat(ring, t, effRot, scale, cx, cy, closed);
   let path = '';
   let lastVisible = false;
   let lastSx = 0, lastSy = 0;
   let subFirstSx = 0, subFirstSy = 0;
   let subOpen = false;
+  let prevRlon = null;
+  let prevBack = false;
   const flat = t > 0.05;
   // Threshold: a jump bigger than a third of the unit-projection-width (~0.66) means antimeridian split.
   const jumpThreshold = 0.66 * scale;
@@ -144,16 +212,27 @@ function ringPath(ring, t, rotation, scale, cx, cy, lambdaShift = 0, closed = fa
   for (let i = 0; i < ring.length; i++) {
     const lon = ring[i][0];
     const lat = ring[i][1];
+    const r = rotateLonLat(lon, lat, effRot);
     const p = project(lon, lat, t, effRot);
     if (!p || !p.visible) {
       if (lastVisible) closeSub();
       lastVisible = false;
+      prevRlon = r.lon;
+      prevBack = !r.frontFacing;
       continue;
     }
     const sx = cx + p.x * scale;
     const sy = cy + p.y * scale;
     let breakHere = false;
-    if (flat && lastVisible) {
+    // Deep-seam break: back-facing points are pinned to the silhouette edge x = sign(rlon)·cos(lat).
+    // The sign flips only when the rotated longitude wraps across ±180 (the far antimeridian),
+    // so connecting across it would draw a full-width horizontal "stripe". Break the subpath
+    // there instead. This works at ALL t (the pixel test below is off for t ≤ 0.05).
+    if (lastVisible && prevBack && !r.frontFacing && prevRlon !== null &&
+        Math.abs(r.lon - prevRlon) > 180) {
+      breakHere = true;
+    }
+    if (flat && lastVisible && !breakHere) {
       const dx = sx - lastSx, dy = sy - lastSy;
       // Big horizontal leap with small vertical change = antimeridian wrap
       if (Math.abs(dx) > jumpThreshold && Math.abs(dy) < jumpThreshold * 0.6) breakHere = true;
@@ -172,6 +251,8 @@ function ringPath(ring, t, rotation, scale, cx, cy, lambdaShift = 0, closed = fa
         lastSx = sx; lastSy = sy;
       }
     }
+    prevRlon = r.lon;
+    prevBack = !r.frontFacing;
   }
   closeSub();
   return path;
