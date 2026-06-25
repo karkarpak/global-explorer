@@ -1,4 +1,8 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 html, body, #root { height: 100%; overflow: hidden; }
 body {
   font-family: var(--font-family-base);
@@ -496,50 +500,80 @@ body {
 /* ========== MOBILE / TOUCH LAYOUT ========== */
 @media (max-width: 720px) {
   /* Stack: globe on top, flights panel below */
-  .explorer-layout { flex-direction: column; }
+  .explorer-layout { flex-direction: column; overflow: hidden; }
   .main {
     order: -1; flex: none;
-    height: 50vh; min-height: 300px;
+    height: 50dvh; min-height: 260px; max-height: 55dvh;
   }
   .sidebar {
     width: 100%; min-width: 0; flex: 1 1 auto; min-height: 0;
     border-right: none; border-top: 1px solid var(--ui-border);
   }
 
-  /* Header tightens up */
-  .product-header { padding: 0 12px; gap: 8px; }
+  /* Header tightens up; respect notched phones */
+  .product-header {
+    padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+    gap: 8px;
+    padding-top: env(safe-area-inset-top);
+    height: auto; min-height: 45px;
+  }
   .product-header__sub { display: none; }
+  .product-header__title { font-size: 14px; min-width: 0; }
+  .product-header__title svg { flex-shrink: 0; }
 
   /* Style popover never overflows the viewport */
   .style-pop { width: min(280px, calc(100vw - 24px)); }
 
   /* Projection slider hugs the bottom of the globe area */
-  .proj-slider-wrap { bottom: 14px; padding: 11px 14px 10px; }
+  .proj-slider-wrap {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    padding: 11px 14px 10px;
+    width: min(560px, calc(100% - 24px));
+  }
+  .proj-slider__labels { font-size: 10px; gap: 4px; }
 
   /* Larger touch targets for zoom controls */
-  .zoom-controls { top: 12px; right: 12px; }
+  .zoom-controls {
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+  }
   .zoom-controls__btn { width: 38px; height: 38px; }
   .zoom-controls__btn svg { width: 16px; height: 16px; }
 
-  /* Stats bar a touch smaller */
-  .stats-bar { left: 12px; top: 12px; padding: 6px 10px; gap: 12px; }
+  /* Stats bar: compact, wraps if needed */
+  .stats-bar {
+    left: max(12px, env(safe-area-inset-left));
+    top: max(12px, env(safe-area-inset-top));
+    padding: 6px 10px; gap: 10px;
+    flex-wrap: wrap; max-width: calc(100% - 72px);
+  }
+  .stat__label { font-size: 9px; }
+  .stat__val { font-size: 12px; }
 
-  /* Comfortable tap target on the add button + inputs */
+  /* Comfortable tap targets on inputs and list rows */
   .flight-input__field { height: 42px; }
   .btn-add { height: 42px; width: 42px; }
   .flight-input__code { font-size: 16px; } /* 16px avoids iOS zoom-on-focus */
+  .flight-row { padding: 10px 16px; min-height: 52px; }
+  .flight-row__remove { opacity: 1; width: 32px; height: 32px; }
 
   /* Collapsible flights panel */
   .sidebar__collapse { display: inline-flex; }
   .sidebar__header { cursor: default; }
-  .explorer-layout--collapsed .main { height: auto; flex: 1 1 auto; }
+  .explorer-layout--collapsed .main {
+    height: auto; flex: 1 1 auto; max-height: none;
+  }
   .explorer-layout--collapsed .sidebar { flex: 0 0 auto; }
   .explorer-layout--collapsed .sidebar__body { display: none; }
   .explorer-layout--collapsed .sidebar__hint { display: none; }
   .explorer-layout--collapsed .sidebar__collapse svg { transform: rotate(180deg); }
+
+  /* Dev tweaks panel overlaps the flights UI on phones */
+  .twk-panel { display: none !important; }
 }
 
 /* On touch devices, hover-only affordances shouldn't stick */
 @media (hover: none) {
   .zoom-controls__btn[data-tip]:hover::after { opacity: 0; }
+  .flight-row__remove { opacity: 1; }
 }
