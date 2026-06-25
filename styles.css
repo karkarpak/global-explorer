@@ -39,7 +39,7 @@ body {
 }
 .main {
   flex: 1; position: relative; min-width: 0;
-  background: var(--theme-paper, inherit);
+  background: var(--theme-paper, #ece6d8);
   display: flex; flex-direction: column;
   transition: background 0.4s ease;
 }
@@ -54,12 +54,12 @@ body {
 .sidebar__body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 .sidebar__collapse {
   display: none; /* shown only on mobile */
-  appearance: none; border: none; background: none;
+  flex-shrink: 0;
   width: 30px; height: 30px; align-items: center; justify-content: center;
-  border-radius: 6px; cursor: pointer; color: var(--ui-icon-secondary);
+  border-radius: 6px; color: var(--ui-icon-secondary);
   margin: -6px -6px -6px 0; padding: 0;
+  pointer-events: none;
 }
-.sidebar__collapse:hover { background: var(--ui-interaction-secondary); color: var(--ui-text); }
 .sidebar__collapse svg { width: 18px; height: 18px; transition: transform 0.2s; }
 .sidebar__hint { font-size: 11px; color: var(--ui-text-tertiary); font-family: var(--font-family-mono); letter-spacing: -0.01em; }
 .count-pill {
@@ -303,7 +303,7 @@ body {
 
 .globe-stage {
   flex: 1; position: relative; overflow: hidden;
-  background: var(--theme-paper, inherit);
+  background: var(--theme-paper, #ece6d8);
   cursor: grab;
   transition: background 0.4s ease;
   touch-action: none;
@@ -557,9 +557,14 @@ body {
   .flight-row { padding: 10px 16px; min-height: 52px; }
   .flight-row__remove { opacity: 1; width: 32px; height: 32px; }
 
-  /* Collapsible flights panel */
+  /* Collapsible flights panel — whole header is the tap target */
   .sidebar__collapse { display: inline-flex; }
-  .sidebar__header { cursor: default; }
+  .sidebar__header {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .sidebar__header:active { background: var(--ui-interaction-secondary); }
   .explorer-layout--collapsed .main {
     height: auto; flex: 1 1 auto; max-height: none;
   }

@@ -166,6 +166,13 @@ function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx, onSa
   const [batchMsg, setBatchMsg] = useState('');
   const fromRef = useRef(null);
   const toRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 720px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 720px)');
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // Airport autocomplete: rank by IATA-code prefix first, then city / name match.
   const suggest = (q) => {
@@ -263,12 +270,21 @@ function Sidebar({ flights, onAdd, onAddBatch, onRemove, onHover, hoverIdx, onSa
 
   return (
     <div className="sidebar">
-      <div className="sidebar__header">
+      <div
+        className="sidebar__header"
+        {...(isMobile ? {
+          onClick: onToggleCollapse,
+          onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleCollapse(); } },
+          role: 'button',
+          tabIndex: 0,
+          'aria-expanded': !collapsed,
+          'aria-label': collapsed ? 'Expand flights panel' : 'Collapse flights panel'
+        } : {})}>
         <div className="sidebar__title">
           <span className="sidebar__title-left">Flights <span className="count-pill">{flights.length}</span></span>
-          <button className="sidebar__collapse" onClick={onToggleCollapse} aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}>
+          <span className="sidebar__collapse" aria-hidden="true">
             <Icon.Caret />
-          </button>
+          </span>
         </div>
         <div className="sidebar__hint">Add routes by IATA code, e.g. JFK → CDG</div>
       </div>
@@ -663,6 +679,7 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
 
   return (
     <div ref={stageRef} className={`globe-stage ${dragging ? 'globe-stage--dragging' : ''}`}
+    style={{ background: theme.paper }}
     onMouseDown={onMouseDown} onWheel={onWheel} onMouseMove={onMouseMove}
     onTouchStart={onTouchStart}
     onMouseLeave={() => setHoverCountry(null)}>
@@ -1011,21 +1028,15 @@ function App() {
     : baseTheme;
   const routeStyle = ROUTE_STYLES[tweaks.routeStyle] || ROUTE_STYLES.bold;
 
-  // Apply theme as CSS variables on root — when mood is non-default OR custom paperColor is set
+  // Keep CSS variables in sync with the active theme (always set — never remove,
+  // or background: var(--theme-paper, inherit) can stick on the old color until repaint).
   useEffect(() => {
     const r = document.documentElement;
-    const customPaper = !!tweaks.paperColor;
-    if ((tweaks.mood && tweaks.mood !== 'daylight') || customPaper) {
-      r.style.setProperty('--theme-paper', theme.paper);
-      r.style.setProperty('--theme-ink', theme.ink);
-      r.style.setProperty('--theme-grat', theme.grat);
-      r.style.setProperty('--theme-label', theme.labelColor);
-    } else {
-      r.style.removeProperty('--theme-paper');
-      r.style.removeProperty('--theme-ink');
-      r.style.removeProperty('--theme-grat');
-      r.style.removeProperty('--theme-label');
-    }
+    r.style.setProperty('--theme-paper', theme.paper);
+    r.style.setProperty('--theme-ink', theme.ink);
+    r.style.setProperty('--theme-grat', theme.grat);
+    r.style.setProperty('--theme-label', theme.labelColor);
+    document.body.style.backgroundColor = theme.paper;
     document.body.dataset.mood = tweaks.mood;
   }, [tweaks.mood, tweaks.paperColor, theme.paper, theme.ink, theme.grat, theme.labelColor]);
 
@@ -1081,7 +1092,7 @@ function App() {
       <Header tweaks={tweaks} onStyle={setStyle} />
       <div className={`explorer-layout ${panelCollapsed ? 'explorer-layout--collapsed' : ''}`}>
         <Sidebar flights={flights} onAdd={addFlight} onAddBatch={addBatch} onRemove={removeFlight} onHover={setHoverIdx} hoverIdx={hoverIdx} onSample={loadSample} onClear={clearAll} collapsed={panelCollapsed} onToggleCollapse={() => setPanelCollapsed((c) => !c)} />
-        <div className="main">
+        <div className="main" style={{ background: theme.paper }}>
           <GlobeStage flights={flights} hoverIdx={hoverIdx} projT={projT} countries={countries} />
           <ProjSlider value={projT} onChange={setProjT} />
         </div>
