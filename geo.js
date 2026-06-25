@@ -185,6 +185,92 @@ function ringPathFlat(ring, t, effRot, scale, cx, cy, closed) {
   return path;
 }
 
+// Pure globe (t = 0): proper horizon clipping for a single ring.
+// Walks the ring in the viewer frame (cx = depth, +toward viewer). Visible spans
+// (cx >= 0) are emitted with the orthographic screen position (cy, -cz). At each
+// horizon crossing we insert the EXACT silhouette point (cx = 0) and, between two
+// consecutive visible spans, bridge along the SHORT arc of the limb circle.
+//
+// Why: an antimeridian-crossing polygon (Russia, Canada, Antarctica) used to split
+// into several independently-closed subpaths with opposite winding, which evenodd
+// fill then cancels into holes. Stitching the spans along the limb makes one
+// continuously-wound region that fills correctly, while a fully back-facing ring
+// collapses to a sub-pixel sliver (effectively hidden) and inter-ring holes are
+// untouched (each ring is clipped independently, preserving opposite winding).
+function ringPathGlobe(ring, effRot, scale, cx, cy, closed) {
+  if (ring.length < 2) return '';
+  const dtr = Math.PI / 180;
+  const { lambda = 0, phi = 0 } = effRot;
+  const cosP = Math.cos(phi * dtr), sinP = Math.sin(phi * dtr);
+  // Viewer-frame vector for a lon/lat: {d: depth(+front), r: right, u: up}.
+  const vf = (lon, lat) => {
+    const lo = (lon + lambda) * dtr, la = lat * dtr;
+    const x = Math.cos(la) * Math.cos(lo);
+    const y = Math.cos(la) * Math.sin(lo);
+    const z = Math.sin(la);
+    const nx = x * cosP - z * sinP;
+    const nz = x * sinP + z * cosP;
+    return { d: nx, r: y, u: nz };
+  };
+  const V = new Array(ring.length);
+  for (let i = 0; i < ring.length; i++) V[i] = vf(ring[i][0], ring[i][1]);
+  const n = V.length;
+  // Collect visible spans, inserting exact crossing points where depth changes sign.
+  const spans = [];
+  let cur = null;
+  for (let i = 0; i < n; i++) {
+    const a = V[i];
+    const b = V[(i + 1) % n];
+    const av = a.d >= -1e-9;
+    const bv = b.d >= -1e-9;
+    if (av) {
+      if (!cur) { cur = []; spans.push(cur); }
+      cur.push(a);
+    }
+    if (closed || i < n - 1) {
+      if (av !== bv) {
+        const f = a.d / (a.d - b.d);
+        const c = {
+          d: 0,
+          r: a.r + (b.r - a.r) * f,
+          u: a.u + (b.u - a.u) * f
+        };
+        if (av) { cur.push(c); cur = null; }
+        else { cur = [c]; spans.push(cur); }
+      }
+    }
+  }
+  if (spans.length === 0) return '';
+  const sx = (v) => cx + v.r * scale;
+  const sy = (v) => cy - v.u * scale;
+  const ang = (v) => Math.atan2(v.u, v.r);
+  let path = '';
+  let started = false;
+  for (let si = 0; si < spans.length; si++) {
+    const span = spans[si];
+    for (let j = 0; j < span.length; j++) {
+      const v = span[j];
+      path += (started ? 'L' : 'M') + sx(v).toFixed(2) + ' ' + sy(v).toFixed(2);
+      started = true;
+    }
+    if (si === spans.length - 1 && !closed) break;
+    // Bridge to the next span's start along the short limb arc (unit circle, radius scale).
+    const from = span[span.length - 1];
+    const to = spans[(si + 1) % spans.length][0];
+    let a0 = ang(from), a1 = ang(to);
+    let da = a1 - a0;
+    while (da > Math.PI) da -= 2 * Math.PI;
+    while (da < -Math.PI) da += 2 * Math.PI;
+    const steps = Math.max(1, Math.ceil(Math.abs(da) / (4 * dtr)));
+    for (let k = 1; k < steps; k++) {
+      const aa = a0 + da * (k / steps);
+      path += 'L' + (cx + Math.cos(aa) * scale).toFixed(2) + ' ' + (cy - Math.sin(aa) * scale).toFixed(2);
+    }
+  }
+  if (closed && started) path += 'Z';
+  return path;
+}
+
 // Single-tile polyline. The longitude rotation is handled inside project() via the rotation arg.
 // Here we just need to detect when consecutive projected points jump across the screen
 // (antimeridian wrap on flat) and start a new subpath there.
@@ -195,6 +281,9 @@ function ringPath(ring, t, rotation, scale, cx, cy, lambdaShift = 0, closed = fa
   // wrap-around polygons stay closed and fill. The globe/unfold morph (t < 0.5) below
   // is untouched.
   if (t >= 0.5) return ringPathFlat(ring, t, effRot, scale, cx, cy, closed);
+  // Pure globe: proper horizon clipping (fixes antimeridian polygons tearing into
+  // mixed-winding subpaths). The unfold morph (t > 0) keeps its existing renderer.
+  if (t <= 0) return ringPathGlobe(ring, effRot, scale, cx, cy, closed);
   let path = '';
   let lastVisible = false;
   let lastSx = 0, lastSy = 0;
