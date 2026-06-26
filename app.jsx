@@ -15,24 +15,21 @@ function atlasNameFor(airportCountry) {
   return COUNTRY_ALIASES[airportCountry] || airportCountry;
 }
 
-// Keep the pinned country panel inside the map stage. On mobile, center it so a tap
-// near the edge doesn't flip the panel off-screen (the old flip-left logic had no
-// minimum-x clamp).
-function positionCountryPin(anchor, stageW, stageH, { panelW = 280, panelH = 120, margin = 16, isMobile = false } = {}) {
-  const w = Math.min(panelW, stageW - margin * 2);
-  if (isMobile) {
-    return {
-      x: (stageW - w) / 2,
-      y: Math.max(margin + 48, (stageH - panelH) / 2),
-      width: w
-    };
-  }
-  let x = anchor.x + 16;
-  let y = anchor.y - 20;
-  if (x + w > stageW - margin) x = anchor.x - w - 16;
-  x = Math.max(margin, Math.min(x, stageW - w - margin));
-  y = Math.max(margin, Math.min(y, stageH - panelH - margin));
-  return { x, y, width: w };
+function CountryTooltipBody({ country, countryStats }) {
+  const s = countryStats[country.name];
+  return (
+    <>
+      <div className="country-tooltip__name">{country.name}</div>
+      {s ?
+      <div className="country-tooltip__stats">
+          <span><b>{s.departures}</b> dep</span>
+          <span><b>{s.arrivals}</b> arr</span>
+          <span><b>{s.airports.size}</b> {s.airports.size === 1 ? 'airport' : 'airports'}</span>
+        </div> :
+
+      <div className="country-tooltip__empty">No routes</div>
+      }
+    </>);
 }
 
 // Muted route colors that work on the cream background
@@ -495,7 +492,6 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
   const [dragging, setDragging] = useState(false);
   const [hoverCountry, setHoverCountry] = useState(null);
   const [pinnedCountry, setPinnedCountry] = useState(null);
-  const [pinnedPos, setPinnedPos] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const dragStart = useRef(null);
   // Touch support: snapshot of the active gesture + live values for the move handler.
@@ -797,25 +793,29 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
         {/* Country outlines — outline-only, hover highlights */}
         <g clipPath="url(#flat-clip)">
           {countryPaths.map((c, i) => {
-            const isHover = hoverCountry && hoverCountry.id === c.id;
+            const isHighlight = !dragging && (
+              isMobile ?
+              pinnedCountry && pinnedCountry.id === c.id :
+              hoverCountry && hoverCountry.id === c.id);
             return (
               <path
                 key={c.id || i}
                 d={c.path}
-                fill={isHover ? theme.landHover : theme.land}
+                fill={isHighlight ? theme.landHover : theme.land}
                 fillRule="nonzero"
                 stroke={theme.ink}
                 strokeWidth="0.7"
                 strokeLinejoin="round"
-                onMouseEnter={() => !dragging && setHoverCountry(c)}
-                onMouseLeave={() => setHoverCountry(null)}
+                onMouseEnter={() => !dragging && !isMobile && setHoverCountry(c)}
+                onMouseLeave={() => !isMobile && setHoverCountry(null)}
+                onMouseDown={(e) => isMobile && e.stopPropagation()}
+                onTouchStart={(e) => isMobile && e.stopPropagation()}
                 onClick={(e) => {
+                  if (!isMobile) return;
                   e.stopPropagation();
-                  const rect = stageRef.current.getBoundingClientRect();
                   setPinnedCountry(c);
-                  setPinnedPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
                 }}
-                style={{ cursor: 'pointer' }} />);
+                style={{ cursor: isMobile ? 'pointer' : 'default' }} />);
 
 
           })}
@@ -877,49 +877,23 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
         </g>
       </svg>
 
-      {/* Country tooltip — hover */}
-      {hoverCountry && !dragging && !pinnedCountry && (() => {
-        const s = countryStats[hoverCountry.name];
-        const total = s ? s.departures + s.arrivals : 0;
-        return (
-          <div className="country-tooltip" style={{ left: mousePos.x, top: mousePos.y }}>
-            <div className="country-tooltip__name">{hoverCountry.name}</div>
-            {s ?
-            <div className="country-tooltip__stats">
-                <span><b>{s.departures}</b> dep</span>
-                <span><b>{s.arrivals}</b> arr</span>
-                <span><b>{s.airports.size}</b> {s.airports.size === 1 ? 'airport' : 'airports'}</span>
-              </div> :
+      {/* Country tooltip — desktop hover */}
+      {hoverCountry && !dragging && !pinnedCountry && !isMobile && (
+        <div className="country-tooltip" style={{ left: mousePos.x, top: mousePos.y }}>
+          <CountryTooltipBody country={hoverCountry} countryStats={countryStats} />
+        </div>
+      )}
 
-            <div className="country-tooltip__empty">No routes</div>
-            }
-          </div>);
+      {/* Mobile: pinned country uses the hover-style tag at top-left (covers stats bar) */}
+      {isMobile && pinnedCountry && !dragging && (
+        <div className="country-tooltip country-tooltip--mobile-head">
+          <button className="country-tooltip__close" type="button" onClick={() => setPinnedCountry(null)} aria-label="Close">×</button>
+          <CountryTooltipBody country={pinnedCountry} countryStats={countryStats} />
+        </div>
+      )}
 
-      })()}
-
-      {/* Pinned country panel — click to open, button to close */}
-      {pinnedCountry && (() => {
-        const s = countryStats[pinnedCountry.name];
-        const total = s ? s.departures + s.arrivals : 0;
-        const { x, y, width } = positionCountryPin(pinnedPos, size.w, size.h, { isMobile });
-        return (
-          <div className={`country-pin${isMobile ? ' country-pin--mobile' : ''}`} style={{ left: x, top: y, maxWidth: width }}>
-            <button className="country-pin__close" onClick={() => setPinnedCountry(null)} aria-label="Close">×</button>
-            <div className="country-pin__name">{pinnedCountry.name}</div>
-            {s ? (
-              <>
-                <div className="country-pin__big">{total.toLocaleString()}</div>
-                <div className="country-pin__sub">{total === 1 ? 'flight' : 'flights'} · {s.airports.size} {s.airports.size === 1 ? 'airport' : 'airports'}</div>
-              </>
-            ) : (
-              <div className="country-pin__sub country-pin__sub--muted">No routes yet</div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Stats overlay */}
-      {flights.length > 0 &&
+      {/* Stats overlay — hidden on mobile while a country is selected */}
+      {flights.length > 0 && !(isMobile && pinnedCountry) &&
       <div className="stats-bar">
           <div><div className="stat__label">Routes</div><div className="stat__val">{flights.length}</div></div>
           <div><div className="stat__label">Airports</div><div className="stat__val">{airports.length}</div></div>

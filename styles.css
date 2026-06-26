@@ -456,6 +456,28 @@ body {
 .country-tooltip__stats b { color: #1a1814; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--font-family-mono); margin-right: 3px; }
 .country-tooltip__empty { font-size: 11px; color: #a8a092; margin-top: 4px; font-style: italic; }
 
+/* Mobile pinned country: fixed top-left, same slot as the routes stats bar */
+.country-tooltip--mobile-head {
+  transform: none;
+  pointer-events: auto;
+  left: max(12px, env(safe-area-inset-left));
+  top: max(12px, env(safe-area-inset-top));
+  z-index: 20;
+  max-width: calc(100% - 72px);
+  padding-right: 34px;
+  min-width: 0;
+}
+.country-tooltip__close {
+  position: absolute; top: 6px; right: 6px;
+  width: 24px; height: 24px;
+  border: none; background: none;
+  font-size: 18px; line-height: 1; color: #8a8276;
+  cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.country-tooltip__close:active { background: #ece8df; color: #1a1814; }
+
 .country-pin {
   position: absolute;
   background: #fafaf7;
@@ -494,11 +516,6 @@ body {
   margin-top: 4px; letter-spacing: 0.01em;
 }
 .country-pin__sub--muted { color: #a8a092; font-style: italic; margin-top: 6px; }
-
-.country-pin--mobile {
-  width: calc(100% - 32px);
-  box-sizing: border-box;
-}
 
 .loading-indicator {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
