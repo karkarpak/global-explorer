@@ -495,6 +495,11 @@ body {
 }
 .country-pin__sub--muted { color: #a8a092; font-style: italic; margin-top: 6px; }
 
+.country-pin--mobile {
+  width: calc(100% - 32px);
+  box-sizing: border-box;
+}
+
 .loading-indicator {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; gap: 8px;

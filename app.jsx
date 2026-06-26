@@ -15,6 +15,26 @@ function atlasNameFor(airportCountry) {
   return COUNTRY_ALIASES[airportCountry] || airportCountry;
 }
 
+// Keep the pinned country panel inside the map stage. On mobile, center it so a tap
+// near the edge doesn't flip the panel off-screen (the old flip-left logic had no
+// minimum-x clamp).
+function positionCountryPin(anchor, stageW, stageH, { panelW = 280, panelH = 120, margin = 16, isMobile = false } = {}) {
+  const w = Math.min(panelW, stageW - margin * 2);
+  if (isMobile) {
+    return {
+      x: (stageW - w) / 2,
+      y: Math.max(margin + 48, (stageH - panelH) / 2),
+      width: w
+    };
+  }
+  let x = anchor.x + 16;
+  let y = anchor.y - 20;
+  if (x + w > stageW - margin) x = anchor.x - w - 16;
+  x = Math.max(margin, Math.min(x, stageW - w - margin));
+  y = Math.max(margin, Math.min(y, stageH - panelH - margin));
+  return { x, y, width: w };
+}
+
 // Muted route colors that work on the cream background
 const ROUTE_COLORS = [
 '#a85b3c', '#7a8c54', '#3c6b8a', '#8a6a3c',
@@ -481,8 +501,16 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
   // Touch support: snapshot of the active gesture + live values for the move handler.
   const touchRef = useRef(null);
   const [touchActive, setTouchActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 720px)').matches);
   const liveRef = useRef({});
   liveRef.current = { rotation, lambdaShift, verticalPan, zoom };
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 720px)');
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     if (!stageRef.current) return;
@@ -873,16 +901,9 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
       {pinnedCountry && (() => {
         const s = countryStats[pinnedCountry.name];
         const total = s ? s.departures + s.arrivals : 0;
-        // Clamp position so panel stays within stage
-        const stageW = size.w, stageH = size.h;
-        const panelW = 280;
-        let x = pinnedPos.x + 16;
-        let y = pinnedPos.y - 20;
-        if (x + panelW > stageW - 16) x = pinnedPos.x - panelW - 16;
-        if (y < 16) y = 16;
-        if (y > stageH - 120) y = stageH - 120;
+        const { x, y, width } = positionCountryPin(pinnedPos, size.w, size.h, { isMobile });
         return (
-          <div className="country-pin" style={{ left: x, top: y }}>
+          <div className={`country-pin${isMobile ? ' country-pin--mobile' : ''}`} style={{ left: x, top: y, maxWidth: width }}>
             <button className="country-pin__close" onClick={() => setPinnedCountry(null)} aria-label="Close">×</button>
             <div className="country-pin__name">{pinnedCountry.name}</div>
             {s ? (
