@@ -537,8 +537,8 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
 
   const onMouseDown = (e) => {
     setDragging(true);
-    setHoverCountry(null);
-    setPinnedCountry(null);
+    if (!isMobile) setHoverCountry(null);
+    else setPinnedCountry(null);
     dragStart.current = {
       x: e.clientX, y: e.clientY,
       rot: { ...rotation },
@@ -808,12 +808,12 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
                 strokeLinejoin="round"
                 onMouseEnter={() => !dragging && !isMobile && setHoverCountry(c)}
                 onMouseLeave={() => !isMobile && setHoverCountry(null)}
-                onMouseDown={(e) => isMobile && e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 onTouchStart={(e) => isMobile && e.stopPropagation()}
                 onClick={(e) => {
                   if (!isMobile) return;
                   e.stopPropagation();
-                  setPinnedCountry(c);
+                  setPinnedCountry((prev) => prev?.id === c.id ? null : c);
                 }}
                 style={{ cursor: isMobile ? 'pointer' : 'default' }} />);
 
@@ -877,8 +877,8 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
         </g>
       </svg>
 
-      {/* Country tooltip — desktop hover */}
-      {hoverCountry && !dragging && !pinnedCountry && !isMobile && (
+      {/* Country tooltip — desktop hover (click does not dismiss; country mousedown is isolated) */}
+      {hoverCountry && !dragging && !isMobile && (
         <div className="country-tooltip" style={{ left: mousePos.x, top: mousePos.y }}>
           <CountryTooltipBody country={hoverCountry} countryStats={countryStats} />
         </div>
@@ -887,7 +887,6 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
       {/* Mobile: pinned country uses the hover-style tag at top-left (covers stats bar) */}
       {isMobile && pinnedCountry && !dragging && (
         <div className="country-tooltip country-tooltip--mobile-head">
-          <button className="country-tooltip__close" type="button" onClick={() => setPinnedCountry(null)} aria-label="Close">×</button>
           <CountryTooltipBody country={pinnedCountry} countryStats={countryStats} />
         </div>
       )}

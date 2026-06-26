@@ -464,19 +464,8 @@ body {
   top: max(12px, env(safe-area-inset-top));
   z-index: 20;
   max-width: calc(100% - 72px);
-  padding-right: 34px;
   min-width: 0;
 }
-.country-tooltip__close {
-  position: absolute; top: 6px; right: 6px;
-  width: 24px; height: 24px;
-  border: none; background: none;
-  font-size: 18px; line-height: 1; color: #8a8276;
-  cursor: pointer; padding: 0;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-}
-.country-tooltip__close:active { background: #ece8df; color: #1a1814; }
 
 .country-pin {
   position: absolute;
