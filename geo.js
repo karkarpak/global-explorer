@@ -386,11 +386,19 @@ function gcDistance(p1, p2) {
   return Math.round(2*R*Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
 }
 
+// Latitude limit of the flat frame; meridians must reach exactly this so they touch
+// the top and bottom edges of the Robinson/Mercator frame (which spans ±FRAME_LAT).
+const FRAME_LAT = 85;
+
 function graticule() {
   const lines = [];
   for (let lon = -180; lon <= 180; lon += 15) {
     const ring = [];
-    for (let lat = -85; lat <= 85; lat += 4) ring.push([lon, lat]);
+    // Start and end exactly on ±FRAME_LAT so the meridian reaches the frame edges.
+    // Stepping by a fixed increment from -85 used to stop at 83 and leave a gap.
+    ring.push([lon, FRAME_LAT]);
+    for (let lat = FRAME_LAT - 4; lat > -FRAME_LAT; lat -= 4) ring.push([lon, lat]);
+    ring.push([lon, -FRAME_LAT]);
     lines.push(ring);
   }
   for (let lat = -75; lat <= 75; lat += 15) {

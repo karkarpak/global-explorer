@@ -496,12 +496,17 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
     return () => ro.disconnect();
   }, []);
 
-  // When sliding to flat, smoothly drain phi to 0 (no tilt makes sense on flat paper)
+  // When sliding to flat, smoothly drain phi to 0 (no tilt makes sense on flat paper).
+  // Any residual tilt bows the meridians on a flat map, so we snap fully to 0 once it's
+  // small rather than leaving a fraction of a degree behind.
   useEffect(() => {
-    if (projT >= 0.5 && Math.abs(rotation.phi) > 0.3 && !dragging) {
+    if (projT >= 0.5 && rotation.phi !== 0 && !dragging) {
       const id = setTimeout(() => {
-        setRotation((r) => ({ lambda: r.lambda, phi: r.phi * 0.85 }));
-      }, 30);
+        setRotation((r) => {
+          const next = r.phi * 0.8;
+          return { lambda: r.lambda, phi: Math.abs(next) < 0.05 ? 0 : next };
+        });
+      }, 24);
       return () => clearTimeout(id);
     }
   }, [projT, rotation.phi, dragging]);
@@ -770,7 +775,7 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
                 key={c.id || i}
                 d={c.path}
                 fill={isHover ? theme.landHover : theme.land}
-                fillRule="evenodd"
+                fillRule="nonzero"
                 stroke={theme.ink}
                 strokeWidth="0.7"
                 strokeLinejoin="round"
