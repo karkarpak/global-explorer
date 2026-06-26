@@ -494,12 +494,15 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
   const [pinnedCountry, setPinnedCountry] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const dragStart = useRef(null);
+  const draggedRef = useRef(false);
+  const endInteractionRef = useRef(null);
+  const DRAG_THRESHOLD = 6;
   // Touch support: snapshot of the active gesture + live values for the move handler.
   const touchRef = useRef(null);
   const [touchActive, setTouchActive] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 720px)').matches);
   const liveRef = useRef({});
-  liveRef.current = { rotation, lambdaShift, verticalPan, zoom };
+  liveRef.current = { rotation, lambdaShift, verticalPan, zoom, projT, size };
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 720px)');
@@ -535,49 +538,70 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
     }
   }, [projT, rotation.phi, dragging]);
 
-  const onMouseDown = (e) => {
-    setDragging(true);
-    if (!isMobile) setHoverCountry(null);
-    else setPinnedCountry(null);
+  const startInteraction = (clientX, clientY) => {
+    if (endInteractionRef.current) endInteractionRef.current();
+    draggedRef.current = false;
     dragStart.current = {
-      x: e.clientX, y: e.clientY,
-      rot: { ...rotation },
-      lambdaShift, verticalPan
+      x: clientX, y: clientY,
+      rot: { ...liveRef.current.rotation }
     };
-  };
 
-  useEffect(() => {
-    if (!dragging) return;
-    const onMove = (e) => {
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      if (projT < 0.5) {
-        // Globe / morph-to-Robinson — full rotation (lambda + phi)
-        const sensitivity = 0.4 / zoom;
+    const applyDrag = (x, y) => {
+      const dx = x - dragStart.current.x;
+      const dy = y - dragStart.current.y;
+      const { zoom: z, projT: t, size: sz } = liveRef.current;
+      if (t < 0.5) {
+        const sensitivity = 0.4 / z;
         setRotation({
           lambda: dragStart.current.rot.lambda + dx * sensitivity,
           phi: dragStart.current.rot.phi - dy * sensitivity
         });
       } else {
-        // Robinson / Mercator — belt-pan via rotation.lambda; vertical drag = vertical pan
-        const baseRadius = Math.min(size.w, size.h) * 0.42;
-        const projScale = baseRadius * zoom;
-        const lonDelta = dx / projScale * 180;
+        const projScale = Math.min(sz.w, sz.h) * 0.42 * z;
         setRotation({
-          lambda: dragStart.current.rot.lambda + lonDelta,
+          lambda: dragStart.current.rot.lambda + dx / projScale * 180,
           phi: dragStart.current.rot.phi
         });
-        // Vertical pan locked in flat projections; only horizontal (lambda) pan
       }
     };
-    const onUp = () => setDragging(false);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
+
+    const onMove = (e) => {
+      const pt = e.touches ? e.touches[0] : e;
+      if (!pt) return;
+      if (e.touches) e.preventDefault();
+      const dx = pt.clientX - dragStart.current.x;
+      const dy = pt.clientY - dragStart.current.y;
+      if (!draggedRef.current) {
+        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        draggedRef.current = true;
+        setDragging(true);
+      }
+      applyDrag(pt.clientX, pt.clientY);
+    };
+
+    const onUp = () => {
+      setDragging(false);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+      window.removeEventListener('touchcancel', onUp);
+      endInteractionRef.current = null;
+      setTouchActive(false);
     };
-  }, [dragging, projT, zoom, size]);
+
+    endInteractionRef.current = onUp;
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    window.addEventListener('touchcancel', onUp);
+  };
+
+  const onMouseDown = (e) => {
+    if (e.button !== 0) return;
+    startInteraction(e.clientX, e.clientY);
+  };
 
   const onWheel = (e) => {
     e.preventDefault();
@@ -591,12 +615,11 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
     if (e.touches.length === 1) {
       const t = e.touches[0];
       setHoverCountry(null);
-      setPinnedCountry(null);
-      touchRef.current = { mode: 'drag', x: t.clientX, y: t.clientY, rot: { ...rotation } };
-      setDragging(true);
       setTouchActive(true);
+      startInteraction(t.clientX, t.clientY);
     } else if (e.touches.length === 2) {
-      touchRef.current = { mode: 'pinch', dist: touchDist(e.touches[0], e.touches[1]), zoom };
+      if (endInteractionRef.current) endInteractionRef.current();
+      touchRef.current = { mode: 'pinch', dist: touchDist(e.touches[0], e.touches[1]), zoom: liveRef.current.zoom };
       setDragging(false);
       setTouchActive(true);
     }
@@ -612,29 +635,16 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
         setZoom(Math.max(0.5, Math.min(8, st.zoom * ratio)));
         return;
       }
-      if (st.mode === 'drag' && e.touches.length >= 1) {
-        const t = e.touches[0];
-        const dx = t.clientX - st.x, dy = t.clientY - st.y;
-        const z = liveRef.current.zoom;
-        if (projT < 0.5) {
-          const sensitivity = 0.4 / z;
-          setRotation({ lambda: st.rot.lambda + dx * sensitivity, phi: st.rot.phi - dy * sensitivity });
-        } else {
-          const projScale = Math.min(size.w, size.h) * 0.42 * z;
-          setRotation({ lambda: st.rot.lambda + dx / projScale * 180, phi: st.rot.phi });
-        }
-      }
     };
     const onEnd = (e) => {
       if (e.touches.length === 0) {
-        setDragging(false);
         setTouchActive(false);
         touchRef.current = null;
       } else if (e.touches.length === 1) {
-        // Dropped from pinch to one finger → continue as a drag from the current rotation.
         const t = e.touches[0];
-        touchRef.current = { mode: 'drag', x: t.clientX, y: t.clientY, rot: { ...liveRef.current.rotation } };
-        setDragging(true);
+        touchRef.current = null;
+        setTouchActive(true);
+        startInteraction(t.clientX, t.clientY);
       }
     };
     window.addEventListener('touchmove', onMove, { passive: false });
@@ -728,6 +738,7 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
     style={{ background: theme.paper }}
     onMouseDown={onMouseDown} onWheel={onWheel} onMouseMove={onMouseMove}
     onTouchStart={onTouchStart}
+    onClick={() => { if (isMobile && !draggedRef.current) setPinnedCountry(null); }}
     onMouseLeave={() => setHoverCountry(null)}>
       <svg className="globe-svg">
         <defs>
@@ -808,10 +819,9 @@ function GlobeStage({ flights, hoverIdx, projT, countries }) {
                 strokeLinejoin="round"
                 onMouseEnter={() => !dragging && !isMobile && setHoverCountry(c)}
                 onMouseLeave={() => !isMobile && setHoverCountry(null)}
-                onMouseDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => isMobile && e.stopPropagation()}
                 onClick={(e) => {
                   if (!isMobile) return;
+                  if (draggedRef.current) return;
                   e.stopPropagation();
                   setPinnedCountry((prev) => prev?.id === c.id ? null : c);
                 }}
